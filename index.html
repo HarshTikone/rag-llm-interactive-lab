@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LLM + RAG Interactive Lab</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">🧠</div>
+        <div>
+          <div class="brand-title">LLM + RAG Lab</div>
+          <div class="brand-sub">Learn by building & debugging</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="home">🏁 Home</button>
+        <button class="nav-item" data-view="llm">🧪 LLM Playground</button>
+        <button class="nav-item" data-view="rag">🧱 RAG Builder</button>
+        <button class="nav-item" data-view="advanced">⚡ Advanced RAG</button>
+        <button class="nav-item" data-view="eval">📊 Evaluation</button>
+        <button class="nav-item" data-view="export">📦 Export</button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="hint">
+          Tip: Start with <b>RAG Builder</b> → upload a PDF → Build Index → Ask.
+        </div>
+        <div class="fineprint">
+          Static GitHub Pages MVP. Use a temporary API key if you enable LLM calls.
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="crumb" id="crumb">Home</div>
+          <div class="status" id="status">Ready</div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="pill" id="btnOpenTrace">Trace</button>
+          <button class="pill" id="btnTheme">Theme</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <!-- HOME -->
+        <div class="view active" id="view-home">
+          <h1>Interactive LLM + RAG Learning Lab</h1>
+          <p class="lead">
+            Upload your PDFs, build retrieval pipelines, see every step (chunks, scores, prompt), and learn LLM + RAG from zero to advanced by experimenting.
+          </p>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>✅ What you can do</h3>
+              <ul>
+                <li>Upload PDFs and extract text in-browser</li>
+                <li>Chunking + overlap controls</li>
+                <li>Keyword vs Vector vs Hybrid retrieval</li>
+                <li>Prompt preview + retrieval trace</li>
+                <li>Optional LLM answer generation (BYO key)</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>🚀 Fast start</h3>
+              <ol>
+                <li>Go to <b>RAG Builder</b></li>
+                <li>Upload a PDF</li>
+                <li>Build index</li>
+                <li>Ask a question</li>
+                <li>Inspect Trace (chunks + scores)</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Safety note</h3>
+            <p>
+              GitHub Pages is static. If you enable LLM calls, your key lives in your browser session.
+              Use a temporary key, never commit keys, and consider using a proxy for real deployments.
+            </p>
+          </div>
+        </div>
+
+        <!-- LLM PLAYGROUND -->
+        <div class="view" id="view-llm">
+          <h2>LLM Playground</h2>
+          <p class="muted">Try sampling controls and prompt patterns. (You can run without an LLM key in “Explain-only” mode.)</p>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>LLM Connection</h3>
+              <label class="label">Mode</label>
+              <select id="llmMode" class="input">
+                <option value="explain">Explain-only (no API calls)</option>
+                <option value="openai_compat">OpenAI-compatible endpoint</option>
+              </select>
+
+              <div class="spacer"></div>
+
+              <label class="label">Endpoint (OpenAI-compatible)</label>
+              <input id="llmEndpoint" class="input" placeholder="https://api.your-provider.com/v1/chat/completions" />
+
+              <label class="label">Model</label>
+              <input id="llmModel" class="input" placeholder="gpt-4.1-mini (example)" />
+
+              <label class="label">API Key (stored in memory only)</label>
+              <input id="llmKey" class="input" placeholder="sk-..." type="password" />
+
+              <div class="row">
+                <button class="btn" id="btnTestLLM">Test</button>
+                <button class="btn ghost" id="btnClearLLM">Clear</button>
+              </div>
+              <div class="mini muted" id="llmTestOut"></div>
+            </div>
+
+            <div class="card">
+              <h3>Sampling</h3>
+              <label class="label">Temperature: <span id="tempVal">0.7</span></label>
+              <input id="temperature" type="range" min="0" max="1.5" step="0.1" value="0.7" />
+
+              <label class="label">Top-p: <span id="topPVal">0.9</span></label>
+              <input id="topP" type="range" min="0.1" max="1" step="0.05" value="0.9" />
+
+              <label class="label">Max tokens</label>
+              <input id="maxTokens" class="input" type="number" min="64" max="4096" value="512" />
+
+              <div class="spacer"></div>
+              <label class="label">Prompt</label>
+              <textarea id="llmPrompt" class="textarea" rows="8" placeholder="Explain RAG in simple terms with a real-world analogy."></textarea>
+
+              <div class="row">
+                <button class="btn" id="btnRunLLM">Run</button>
+                <button class="btn ghost" id="btnExamplePrompt">Example</button>
+              </div>
+
+              <div class="output" id="llmOut"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RAG BUILDER -->
+        <div class="view" id="view-rag">
+          <h2>RAG Builder</h2>
+          <p class="muted">Upload PDFs → chunk → index → retrieve → answer (optional LLM).</p>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>1) Upload Data</h3>
+              <input id="pdfFiles" class="input" type="file" accept="application/pdf" multiple />
+              <div class="mini muted">PDF text extraction runs in your browser (no upload to a server).</div>
+              <div class="row">
+                <button class="btn" id="btnExtract">Extract Text</button>
+                <button class="btn ghost" id="btnClearDocs">Clear</button>
+              </div>
+
+              <div class="spacer"></div>
+
+              <h3>2) Chunking</h3>
+              <label class="label">Chunk size (words): <span id="chunkSizeVal">220</span></label>
+              <input id="chunkSize" type="range" min="80" max="600" step="10" value="220" />
+
+              <label class="label">Overlap (words): <span id="overlapVal">40</span></label>
+              <input id="overlap" type="range" min="0" max="200" step="10" value="40" />
+
+              <div class="row">
+                <button class="btn" id="btnChunk">Create Chunks</button>
+                <button class="btn ghost" id="btnPreviewChunks">Preview</button>
+              </div>
+
+              <div class="spacer"></div>
+
+              <h3>3) Index</h3>
+              <label class="label">Retrieval Type</label>
+              <select id="retrievalType" class="input">
+                <option value="keyword">Keyword (TF-IDF)</option>
+                <option value="vector">Vector (Embeddings in browser)</option>
+                <option value="hybrid">Hybrid (RRF Fusion)</option>
+              </select>
+
+              <div class="mini muted">
+                Vector mode loads an embedding model in the browser (slower first time). If it fails, use Keyword.
+              </div>
+
+              <div class="row">
+                <button class="btn" id="btnBuildIndex">Build Index</button>
+                <button class="btn ghost" id="btnResetIndex">Reset</button>
+              </div>
+
+              <div class="mini" id="docStats"></div>
+            </div>
+
+            <div class="card">
+              <h3>4) Ask Questions</h3>
+
+              <label class="label">Top-k</label>
+              <input id="topK" class="input" type="number" min="1" max="20" value="5" />
+
+              <label class="label">Question</label>
+              <textarea id="question" class="textarea" rows="4" placeholder="Ask something about your PDF(s)..."></textarea>
+
+              <div class="row">
+                <button class="btn" id="btnRetrieve">Retrieve</button>
+                <button class="btn primary" id="btnAnswer">Answer (LLM optional)</button>
+              </div>
+
+              <div class="spacer"></div>
+
+              <div class="tabs2">
+                <button class="tab2 active" data-ragtab="answer">Answer</button>
+                <button class="tab2" data-ragtab="context">Context</button>
+                <button class="tab2" data-ragtab="prompt">Prompt</button>
+              </div>
+
+              <div class="panel active" id="ragtab-answer">
+                <div class="output" id="answerOut"></div>
+              </div>
+              <div class="panel" id="ragtab-context">
+                <div class="output" id="contextOut"></div>
+              </div>
+              <div class="panel" id="ragtab-prompt">
+                <div class="output" id="promptOut"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADVANCED -->
+        <div class="view" id="view-advanced">
+          <h2>Advanced RAG Studio</h2>
+          <p class="muted">Experiment with fusion, reranking prompts, and guardrails (MVP-style).</p>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>Hybrid Fusion (RRF)</h3>
+              <p class="muted">Hybrid uses Rank Fusion to combine keyword + vector ranks.</p>
+
+              <label class="label">RRF k (fusion constant)</label>
+              <input id="rrfK" class="input" type="number" min="10" max="200" value="60" />
+
+              <label class="label">Citations Strictness</label>
+              <select id="citeMode" class="input">
+                <option value="soft">Soft (add citations if possible)</option>
+                <option value="strict">Strict (must cite chunk ids)</option>
+              </select>
+
+              <button class="btn" id="btnApplyAdvanced">Apply</button>
+              <div class="mini muted" id="advancedOut"></div>
+            </div>
+
+            <div class="card">
+              <h3>Prompt Injection Demo (Safe Mode)</h3>
+              <p class="muted">We simulate a basic defense: retrieved text is treated as untrusted.</p>
+              <label class="label">Safe Mode</label>
+              <select id="safeMode" class="input">
+                <option value="on">ON (recommended)</option>
+                <option value="off">OFF (demo)</option>
+              </select>
+
+              <div class="mini muted">
+                When Safe Mode is ON, the system prompt instructs the LLM to ignore instructions inside retrieved documents.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EVAL -->
+        <div class="view" id="view-eval">
+          <h2>Evaluation (MVP)</h2>
+          <p class="muted">Basic checks to build intuition: retrieval relevance and citation coverage.</p>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>Retrieval Snapshot</h3>
+              <div class="mini muted">Run a retrieval in RAG Builder, then come back here.</div>
+              <button class="btn" id="btnEvalRefresh">Refresh from last run</button>
+              <div class="output" id="evalOut"></div>
+            </div>
+
+            <div class="card">
+              <h3>Faithfulness Hint</h3>
+              <p class="muted">
+                True faithfulness needs careful judging. Here we show a simple heuristic:
+                does the answer mention citations like [chunk:3] and do those chunks exist?
+              </p>
+              <div class="output" id="faithOut"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EXPORT -->
+        <div class="view" id="view-export">
+          <h2>Export / Import</h2>
+          <p class="muted">Save your index settings + chunks metadata (no private API key stored).</p>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>Export</h3>
+              <button class="btn" id="btnExport">Download recipe.json</button>
+              <div class="mini muted">Includes chunks + metadata + settings. (Not embeddings.)</div>
+              <div class="output" id="exportOut"></div>
+            </div>
+
+            <div class="card">
+              <h3>Import</h3>
+              <input id="importFile" class="input" type="file" accept="application/json" />
+              <button class="btn" id="btnImport">Import recipe.json</button>
+              <div class="output" id="importOut"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- TRACE DRAWER -->
+    <div class="trace" id="trace">
+      <div class="trace-head">
+        <div>
+          <div class="trace-title">Trace</div>
+          <div class="trace-sub muted">Retrieved chunks, scores, and debug info</div>
+        </div>
+        <button class="pill" id="btnCloseTrace">Close</button>
+      </div>
+
+      <div class="trace-body">
+        <div class="trace-section">
+          <div class="trace-label">Last Retrieval</div>
+          <div class="output" id="traceOut"></div>
+        </div>
+
+        <div class="trace-section">
+          <div class="trace-label">Console</div>
+          <div class="output" id="consoleOut"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="assets/app.js"></script>
+</body>
+</html>
